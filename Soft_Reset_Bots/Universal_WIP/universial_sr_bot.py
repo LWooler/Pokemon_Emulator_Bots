@@ -7,37 +7,15 @@ import win32gui
 import win32ui
 from ctypes import windll
 from PIL import Image
+import keyboard
 
 key_press = 258
 key_down = 256
 key_up = 257
-key_x = 0x58
-key_z = 0x5A
-key_entr = 0x0D
-key_bkspce = 0x08
 
 ############################################
 ###############Functions####################
 ############################################
-
-def softReset():
-	dlg.send_message(key_down, key_x, 0)
-	dlg.send_message(key_down, key_z, 0)
-	dlg.send_message(key_down, key_entr, 0)
-	dlg.send_message(key_down, key_bkspce, 0)
-	time.sleep(.3)
-	dlg.send_message(key_up, key_x, 0)
-	dlg.send_message(key_up, key_z, 0)
-	dlg.send_message(key_up, key_entr, 0)
-	dlg.send_message(key_up, key_bkspce, 0)
-
-def returnToBattle():
-	for x in range(0,75):
-		dlg.send_message(key_down, key_x, 0)
-		time.sleep(.1)
-		dlg.send_message(key_up, key_x, 0)
-		time.sleep(.1)
-	time.sleep(3)
 
 def takePicture(hwnd, int):
 	left, top, right, bot = win32gui.GetWindowRect(hwnd)
@@ -78,6 +56,33 @@ def takePicture(hwnd, int):
 		else:
 			im.save("current" + str(hwnd) + ".png")
 
+def playback(keystrokes, key_timing, key_pressed):
+	for i in range(len(keystrokes)-1):
+		if key_timing[i] < 0.1:
+			key_timing[i] = 0.1
+		time.sleep(key_timing[i])
+		if key_pressed[i] == 'down':
+			dlg.send_message(key_down, switch_keys(keystrokes[i]), 0)
+		else:
+			dlg.send_message(key_up, switch_keys(keystrokes[i]), 0)
+	time.sleep(key_timing[len(key_timing)-1])
+
+#convert scan codes https://www.qb64.org/wiki/Scancodes
+#to windows virtual key codes https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+def switch_keys(argument):
+    switcher = {
+        14: 0x08, #backspace
+		15: 0x09, #tab
+        28: 0x0D, #enter
+        44: 0x5A, #z
+        45: 0x58, #x
+        72: 0x26, #up
+        75: 0x25, #left
+        77: 0x27, #right
+        80: 0x28 #down
+    }
+    return switcher.get(argument, 0x4C) #default to L
+
 ############################################
 ###########Main Function####################
 ############################################
@@ -100,19 +105,31 @@ dlg = app.top_window()
 
 #INIT VARIABLES
 start_time = time.time()
+last_time = start_time
 relative_x = MOUSE_X-r[0]
 relative_y = MOUSE_Y-r[1]
 im1 = Image.open('base' + str(handle) + '.png')
 Normal_Color = im1.getpixel( (relative_x,relative_y) )
 im1.close()
 print("Base color = " + str(Normal_Color))
+keystrokes = [];
+key_timing = [];
+key_pressed = [];
 found_shiny = False;
 sr_count = 0;
 
+#Record SR process
+recorded = keyboard.record(until='esc')
+for button_event in recorded:
+	keystrokes.append(button_event.scan_code)
+	key_timing.append(button_event.time-last_time)
+	key_pressed.append(button_event.event_type)
+	last_time = button_event.time
+
+print(keystrokes)
 
 while (not found_shiny):
-	softReset()
-	returnToBattle()
+	playback(keystrokes,key_timing,key_pressed)
 	takePicture(handle, 1)
 
 	#get color of new screenshot at same pixel as base screenshot
@@ -137,7 +154,6 @@ print('Duration ' + time.strftime("%d:%H:%M:%S", time.gmtime(time.time() - start
 #Only known Emulator that this works with is mGBA (way that the keys are passed in)
 #Can be used for as many instances you can fit on your screen
 #Need python32 + pip + all the libraries
-#pip install psutil
 #pip install pyautogui
 #pip install pywinauto
 #
