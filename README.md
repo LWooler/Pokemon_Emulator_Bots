@@ -1,7 +1,16 @@
 # Pokemon_Emulator_Bots
-My collection of bots for finding shiny pokemon on emulators
+My collection of bots for finding shiny Pokémon on emulators
 
-Currently only have 1:
+Working:
+  Pokémon Ruby/Sapphire
+    *Shiny Torchic Starter*
 
-Pokemon Emerald
-  *Shiny Torchic Starter
+WIP:
+  Universal Recording Soft Reset Bot
+
+Planned:
+  Shiny Egg Hatching
+
+Stretch Goals:
+  Wild Encounter Shiny Bot
+  Egg Hatching Shiny Bot
