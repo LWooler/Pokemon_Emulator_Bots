@@ -62,26 +62,66 @@ def playback(keystrokes, key_timing, key_pressed):
 			key_timing[i] = 0.1
 		time.sleep(key_timing[i])
 		if key_pressed[i] == 'down':
-			dlg.send_message(key_down, switch_keys(keystrokes[i]), 0)
+			pressKey(keystrokes[i])
 		else:
-			dlg.send_message(key_up, switch_keys(keystrokes[i]), 0)
+			releaseKey(keystrokes[i])
 	time.sleep(key_timing[len(key_timing)-1])
 
-#convert scan codes https://www.qb64.org/wiki/Scancodes
+#scan codes https://www.qb64.org/wiki/Scancodes
 #to windows virtual key codes https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
-def switch_keys(argument):
-    switcher = {
-        14: 0x08, #backspace
-		15: 0x09, #tab
-        28: 0x0D, #enter
-        44: 0x5A, #z
-        45: 0x58, #x
-        72: 0x26, #up
-        75: 0x25, #left
-        77: 0x27, #right
-        80: 0x28 #down
-    }
-    return switcher.get(argument, 0x4C) #default to L
+
+# C struct redefinitions
+######################################
+###this defines scan code inputs######
+#####instead of virtual key codes####
+######################################
+
+PUL = ctypes.POINTER(ctypes.c_ulong)
+class KeyBdInput(ctypes.Structure):
+    _fields_ = [("wVk", ctypes.c_ushort),
+                ("wScan", ctypes.c_ushort),
+                ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", PUL)]
+
+class HardwareInput(ctypes.Structure):
+    _fields_ = [("uMsg", ctypes.c_ulong),
+                ("wParamL", ctypes.c_short),
+                ("wParamH", ctypes.c_ushort)]
+
+class MouseInput(ctypes.Structure):
+    _fields_ = [("dx", ctypes.c_long),
+                ("dy", ctypes.c_long),
+                ("mouseData", ctypes.c_ulong),
+                ("dwFlags", ctypes.c_ulong),
+                ("time",ctypes.c_ulong),
+                ("dwExtraInfo", PUL)]
+
+class Input_I(ctypes.Union):
+    _fields_ = [("ki", KeyBdInput),
+                 ("mi", MouseInput),
+                 ("hi", HardwareInput)]
+
+class Input(ctypes.Structure):
+    _fields_ = [("type", ctypes.c_ulong),
+                ("ii", Input_I)]
+
+# Actuals Functions
+
+def pressKey(hexKeyCode):
+    extra = ctypes.c_ulong(0)
+    ii_ = Input_I()
+    ii_.ki = KeyBdInput( 0, hexKeyCode, 0x0008, 0, ctypes.pointer(extra) )
+    x = Input( ctypes.c_ulong(1), ii_ )
+    ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+def releaseKey(hexKeyCode):
+    extra = ctypes.c_ulong(0)
+    ii_ = Input_I()
+    ii_.ki = KeyBdInput( 0, hexKeyCode, 0x0008 | 0x0002, 0,
+ctypes.pointer(extra) )
+    x = Input( ctypes.c_ulong(1), ii_ )
+    ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 
 ############################################
 ###########Main Function####################

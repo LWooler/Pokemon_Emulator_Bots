@@ -2,6 +2,7 @@
 
 import ctypes
 import time
+import pyautogui
 
 SendInput = ctypes.windll.user32.SendInput
 
@@ -65,7 +66,9 @@ ctypes.pointer(extra) )
     ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 
 if __name__ == '__main__':
-    pressKey(0x11)
-    time.sleep(1)
-    releaseKey(0x11)
-    time.sleep(1)
+    pyautogui.click()
+    for i in range(10):
+        pressKey(Z)
+        time.sleep(1)
+        releaseKey(Z)
+        time.sleep(1)
